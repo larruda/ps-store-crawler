@@ -24,6 +24,12 @@ LOGIN_URL = 'https://auth.api.sonyentertainmentnetwork.com/login.jsp';
 FREE_GAMES_URL = 'https://store.sonyentertainmentnetwork.com/#!/en-us/free-games/cid=STORE-MSF77008-PSPLUSFREEGAMES';
 FREE_TO_PLAY_URL = 'https://store.sonyentertainmentnetwork.com/#!/en-us/free-to-play/cid=STORE-MSF77008-PS3F2PPS3';
 
+var urls = [];
+urls.push(FREE_TO_PLAY_URL);
+if (casper.cli.has('psn-plus-member')) {
+    urls.push(FREE_GAMES_URL);
+}
+
 casper.start(LOGIN_URL, function() {
     'use strict';
     this.echo('Logging in...');
@@ -41,45 +47,46 @@ casper.waitForUrl(/loginSuccess\.jsp$/, function() {
     this.echo('Failed to login.', 'ERROR').exit(-1);
 });
 
-//casper.thenOpen(FREE_GAMES_URL, function() {
-casper.thenOpen(FREE_TO_PLAY_URL, function() {  
-    'use strict';  
-    this.echo(this.getTitle());
+casper.eachThen(urls, function(response) {  
+    this.thenOpen(response.data, function(response) {
+        'use strict';  
+        this.echo(this.getTitle());
 
-    casper.waitUntilVisible(".addToCartBtn", function() {
-        this.echo("I waited for 10 secs...");
+        casper.waitUntilVisible(".addToCartBtn", function() {
+            this.echo("I waited for 10 secs...");
 
-        games = this.evaluate(function(){
-            var elements = document.querySelectorAll(".cellGridGameStandard:not(.ownAlready)");
-            games = [];
-            [].forEach.call(elements, function(element, index) {
-                if (!element.classList.contains('ownAlready')) {
-                    games.push({ 
-                        'id': element.id, 
-                        'title': element.querySelector(".cellTitle").innerHTML
-                    });
-                }
+            games = this.evaluate(function(){
+                var elements = document.querySelectorAll(".cellGridGameStandard:not(.ownAlready)");
+                games = [];
+                [].forEach.call(elements, function(element, index) {
+                    if (!element.classList.contains('ownAlready')) {
+                        games.push({ 
+                            'id': element.id, 
+                            'title': element.querySelector(".cellTitle").innerHTML
+                        });
+                    }
+                });
+
+                return games;
             });
 
-            return games;
-        });
+            if (games.length == 0) {
+                this.echo("No free donuts for you today, brotha!");
+            }
 
-        if (games.length == 0) {
-            this.echo("No free donuts for you today, brotha!");
-        }
+            this.echo("Found out " + games.length + " left FREE games!");
 
-        this.echo("Found out " + games.length + " left FREE games!");
+            games.forEach(function(game, index) {
+                casper.echo("Title: " + game.title);
+            });
 
-        games.forEach(function(game, index) {
-            casper.echo("Title: " + game.title);
-        });
+            this.echo('Purchasing title "' + games[0].title + '".');
 
-        this.echo('Purchasing title "' + games[0].title + '".');
-
-        
-    }, function() {
-        this.echo("Houston, we have a problem!", 'ERROR');
-    }, 15000);
+            
+        }, function() {
+            this.echo("Houston, we have a problem!", 'ERROR');
+        }, 15000);
+    });
 });
 
 casper.then(function() {
