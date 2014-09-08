@@ -52,11 +52,9 @@ casper.eachThen(urls, function(response) {
         'use strict';  
         this.echo(this.getTitle());
 
-        casper.waitUntilVisible(".addToCartBtn", function() {
-            this.echo("I waited for 10 secs...");
-
+        this.waitUntilVisible(".addToCartBtn", function() {
             games = this.evaluate(function(){
-                var elements = document.querySelectorAll(".cellGridGameStandard:not(.ownAlready)");
+                var elements = document.querySelectorAll(".cellGridGameStandard");
                 games = [];
                 [].forEach.call(elements, function(element, index) {
                     if (!element.classList.contains('ownAlready')) {
@@ -84,40 +82,44 @@ casper.eachThen(urls, function(response) {
 
             
         }, function() {
-            this.echo("Houston, we have a problem!", 'ERROR');
+            this.echo("Houston, we have a problem!", 'error').exit(-1);
+        }, 15000);
+
+        this.then(function() {
+            if (!games.length) {
+                this.exit();
+            }
+
+            if (!this.visible('#' + games[0].id + ' .addToCartBtn')) {
+                this.echo('This title is already on cart. Please remove it so I can purchase it.', 'error').exit(-1);
+            }
+
+            this.click('#' + games[0].id + ' .addToCartBtn');
+
+            this.waitForSelector("#_modal_content .showCartBtn", function(){
+                casper.click('#_modal_content .showCartBtn');
+            });
+        });
+
+        this.waitForSelector('.familyCellGridCart', function() {
+            this.click('a.proceedBtn');
+        });
+
+        this.waitForSelector("a.actionBtn", function(){
+            if (this.fetchText('.totalPrice') != '$0.00$0.00') {
+                this.log("Total Amount: " + this.fetchText('.totalPrice'));
+                this.echo("Wow! This order is NOT FREE! Stopping...", 'error').exit(-1);                
+            }
+            this.echo("On Cart: " + this.fetchText('.firstCell .title'));
+            this.click('a.actionBtn');
+        });
+
+        this.waitForSelector('.orderSummary .receiptMsg', function() {
+            this.echo(this.fetchText('.orderSummary .receiptMsg'));
+        }, function(){
+
         }, 15000);
     });
 });
-
-casper.then(function() {
-    if (!games.length) {
-        this.exit();
-    }
-
-    if (!this.visible('#' + games[0].id + ' .addToCartBtn')) {
-        this.echo('This title is already on cart. Please remove it so I can purchase it.').exit(-1);
-    }
-
-    this.click('#' + games[0].id + ' .addToCartBtn');
-
-    this.waitForSelector("#_modal_content .showCartBtn", function(){
-        casper.click('#_modal_content .showCartBtn');
-    });
-});
-
-casper.waitForSelector('.familyCellGridCart', function() {
-    this.click('a.proceedBtn');
-});
-
-casper.waitForSelector("a.actionBtn", function(){
-    this.echo("On Cart: " + this.fetchText('.firstCell .title'));
-    this.click('a.actionBtn');
-});
-
-casper.waitForSelector('.orderSummary .receiptMsg', function() {
-    this.echo(this.fetchText('.orderSummary .receiptMsg'));
-}, function(){
-
-}, 15000);
 
 casper.run();
