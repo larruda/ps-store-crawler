@@ -12,5 +12,7 @@ By defaut it craws only [Free To Play](https://store.sonyentertainmentnetwork.co
 
 Use `--psn-plus-member` option in order to buy also from the [PS Plus Free Games page](https://store.sonyentertainmentnetwork.com/#!/en-us/free-games/cid=STORE-MSF77008-PSPLUSFREEGAMES).
 
+Tip: Put it on your crontab! Sony handles to warn you by email about the purchases ;-)
+
 ### Dependencies
 * [CasperJS](http://casperjs.org/)
