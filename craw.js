@@ -11,7 +11,7 @@ var casper = require('casper').create({
         height: 768
     },
     verbose: true,
-    logLevel: 'debug'
+    logLevel: 'warning'
 });
 
 if (!casper.cli.has('username') && !casper.cli.has('password')) {
