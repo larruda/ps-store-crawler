@@ -24,10 +24,10 @@ LOGIN_URL = 'https://auth.api.sonyentertainmentnetwork.com/login.jsp';
 FREE_GAMES_URL = 'https://store.sonyentertainmentnetwork.com/#!/en-us/free-games/cid=STORE-MSF77008-PSPLUSFREEGAMES';
 FREE_TO_PLAY_URL = 'https://store.sonyentertainmentnetwork.com/#!/en-us/free-to-play/cid=STORE-MSF77008-PS3F2PPS3';
 
-var urls = [];
-urls.push(FREE_TO_PLAY_URL);
+var URLS = [];
+URLS.push(FREE_TO_PLAY_URL);
 if (casper.cli.has('psn-plus-member')) {
-    urls.push(FREE_GAMES_URL);
+    URLS.push(FREE_GAMES_URL);
 }
 
 casper.start(LOGIN_URL, function() {
@@ -47,8 +47,8 @@ casper.waitForUrl(/loginSuccess\.jsp$/, function() {
     this.echo('Failed to login.', 'ERROR').exit(-1);
 });
 
-casper.eachThen(urls, function(response) {  
-    this.thenOpen(response.data, function(response) {
+casper.each(URLS, function(self, url) {  
+    self.thenOpen(url, function() {
         'use strict';  
         this.echo(this.getTitle());
 
@@ -69,7 +69,7 @@ casper.eachThen(urls, function(response) {
             });
 
             if (games.length == 0) {
-                this.echo("No free donuts for you today, brotha!");
+                this.echo("No free donuts for you today, brotha!", 'ERROR').exit(-1);
             }
 
             this.echo("Found out " + games.length + " left FREE games!");
@@ -82,8 +82,8 @@ casper.eachThen(urls, function(response) {
 
             
         }, function() {
-            this.echo("Houston, we have a problem!", 'error').exit(-1);
-        }, 15000);
+            this.echo("No free donuts for you today, brotha!", 'ERROR').exit(-1);
+        }, 20000);
 
         this.then(function() {
             if (!games.length) {
@@ -98,12 +98,16 @@ casper.eachThen(urls, function(response) {
 
             this.waitForSelector("#_modal_content .showCartBtn", function(){
                 casper.click('#_modal_content .showCartBtn');
-            });
+            }, function() {
+                casper.log("Could not click on link to cart on the modal window after adding game to cart.")
+            }, 15000);
         });
 
         this.waitForSelector('.familyCellGridCart', function() {
             this.click('a.proceedBtn');
-        });
+        }, function(){
+            this.log("Could not proceed with purchase once on cart.");
+        }, 15000);
 
         this.waitForSelector("a.actionBtn", function(){
             if (this.fetchText('.totalPrice') != '$0.00$0.00') {
